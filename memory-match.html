@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Match 🃏</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --bg-1:      #0b0f1a;
+      --bg-2:      #0f1629;
+      --bg-3:      #111d3a;
+      --surface:   rgba(255,255,255,.04);
+      --surface-2: rgba(255,255,255,.07);
+      --border:    rgba(255,255,255,.08);
+      --border-2:  rgba(255,255,255,.14);
+
+      --cyan:      #38bdf8;
+      --cyan-dim:  rgba(56,189,248,.18);
+      --violet:    #7c3aed;
+      --violet-2:  #6d28d9;
+      --indigo:    #4f46e5;
+      --pink:      #ec4899;
+      --amber:     #f59e0b;
+      --amber-dim: rgba(245,158,11,.18);
+      --green:     #10b981;
+      --green-dim: rgba(16,185,129,.18);
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,.18);
+      --orange:    #f97316;
+
+      --text-1:    #f1f5f9;
+      --text-2:    #94a3b8;
+      --text-3:    #64748b;
+
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.4);
+      --shadow-xl: 0 24px 64px rgba(0,0,0,.7), 0 8px 24px rgba(0,0,0,.5);
+
+      --ease-spring: cubic-bezier(.34,1.56,.64,1);
+      --ease-out:    cubic-bezier(.16,1,.3,1);
+      --flip-dur:    .45s;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background-color: var(--bg-1);
+      color: var(--text-1);
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Animated mesh background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%,  rgba(124,58,237,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 85%,  rgba(56,189,248,.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 50% 50%,  rgba(79,70,229,.08) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+      animation: meshShift 18s ease-in-out infinite alternate;
+    }
+    @keyframes meshShift {
+      0%   { opacity: 1;    transform: scale(1); }
+      50%  { opacity: .75; transform: scale(1.06) rotate(1deg); }
+      100% { opacity: 1;    transform: scale(1.02) rotate(-0.5deg); }
+    }
+
+    /* All direct children sit above the mesh */
+    body > * { position: relative; z-index: 1; }
+
+    /* ═══════════════════════════════════════════
+       IN-GAME TITLE
+    ═══════════════════════════════════════════ */
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      background: linear-gradient(100deg, var(--pink) 0%, var(--violet) 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(124,58,237,.35));
+    }
+
+    /* ═══════════════════════════════════════════
+       DIFFICULTY BAR (in-game)
+    ═══════════════════════════════════════════ */
+    .difficulty-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 5px;
+      backdrop-filter: blur(12px);
+    }
+
+    .diff-btn {
+      padding: 7px 20px;
+      border-radius: 50px;
+      border: none;
+      font-family: inherit;
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .3px;
+      cursor: pointer;
+      transition: all .2s var(--ease-out);
+      background: transparent;
+      color: var(--text-2);
+    }
+    .diff-btn:hover {
+      background: var(--surface-2);
+      color: var(--text-1);
+      transform: translateY(-1px);
+    }
+    .diff-btn:active { transform: translateY(0) scale(.97); }
+
+    .diff-btn.active-easy   { background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 2px 12px rgba(16,185,129,.45); }
+    .diff-btn.active-medium { background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff; box-shadow: 0 2px 12px rgba(245,158,11,.45); }
+    .diff-btn.active-hard   { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; box-shadow: 0 2px 12px rgba(239,68,68,.5); }
+
+    /* ═══════════════════════════════════════════
+       HARD BADGE
+    ═══════════════════════════════════════════ */
+    #diffBadge {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 50px;
+      margin-bottom: 8px;
+      display: none;
+    }
+    #diffBadge.hard {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(90deg, #dc2626, #ef4444);
+      box-shadow: 0 0 14px rgba(239,68,68,.4), inset 0 1px 0 rgba(255,255,255,.15);
+    }
+
+    /* ═══════════════════════════════════════════
+       STATS PANEL
+    ═══════════════════════════════════════════ */
+    .stats {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 12px 20px;
+      position: relative;
+    }
+    .stat + .stat::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .stat-label {
+      font-size: .62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-3);
+    }
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--cyan);
+      min-width: 52px;
+      text-align: center;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      transition: color .2s;
+    }
+
+    .stat-value.countdown-warn {
+      color: var(--red) !important;
+      animation: timerPulse .4s ease infinite alternate;
+    }
+    @keyframes timerPulse {
+      from { opacity: 1; }
+      to   { opacity: .45; }
+    }
+
+    /* Best score columns — amber */
+    .stat.best { background: var(--amber-dim); }
+    .stat.best .stat-label { color: var(--amber); opacity: .8; }
+    .stat.best .stat-value  { color: var(--amber); }
+
+    /* Divider cell — keeps the old class name but is now a ::before on .stat */
+    .stat-divider { display: none; }
+
+    /* ═══════════════════════════════════════════
+       NEW RECORD BADGE
+    ═══════════════════════════════════════════ */
+    .new-record {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 6px 18px;
+      border-radius: 50px;
+      background: linear-gradient(90deg, var(--amber), var(--orange));
+      color: #1a0e00;
+      font-weight: 800;
+      font-size: .88rem;
+      letter-spacing: .3px;
+      box-shadow: 0 4px 20px rgba(245,158,11,.5);
+      animation: recordPulse 1.1s ease infinite alternate;
+    }
+    @keyframes recordPulse {
+      from { box-shadow: 0 4px 20px rgba(245,158,11,.4); transform: scale(1); }
+      to   { box-shadow: 0 6px 28px rgba(245,158,11,.75); transform: scale(1.03); }
+    }
+
+    /* ═══════════════════════════════════════════
+       CARD GRID
+    ═══════════════════════════════════════════ */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      max-width: 424px;
+      width: 100%;
+    }
+
+    /* ── Card shell ── */
+    .card {
+      aspect-ratio: 1;
+      perspective: 800px;
+      cursor: pointer;
+      border-radius: var(--radius-md);
+    }
+    .card.locked { cursor: default; pointer-events: none; }
+
+    /* ── Inner flip container ── */
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform var(--flip-dur) var(--ease-out);
+      border-radius: var(--radius-md);
+    }
+    .card.flipped .card-inner,
+    .card.matched .card-inner { transform: rotateY(180deg); }
+
+    /* ── Shared face ── */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-md);
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.6rem, 5.5vw, 2.2rem);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* ── Back face — glass card ── */
+    .card-back {
+      background:
+        linear-gradient(145deg, rgba(124,58,237,.35) 0%, rgba(79,70,229,.25) 50%, rgba(56,189,248,.2) 100%);
+      border: 1px solid rgba(124,58,237,.4);
+      box-shadow:
+        var(--shadow-md),
+        inset 0 1px 0 rgba(255,255,255,.12),
+        inset 0 -1px 0 rgba(0,0,0,.2);
+      font-size: 1.4rem;
+      transition: box-shadow .2s, transform .2s;
+    }
+    /* Shimmer line */
+    .card-back::before {
+      content: '';
+      position: absolute;
+      top: -40%; left: -60%;
+      width: 40%; height: 180%;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.12) 50%, transparent 70%);
+      transform: skewX(-15deg);
+      transition: left .5s ease;
+    }
+    .card-back::after {
+      content: '✦';
+      font-size: 1.3rem;
+      opacity: .5;
+      background: linear-gradient(135deg, var(--violet), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .card:not(.flipped):not(.matched):hover .card-back {
+      border-color: rgba(124,58,237,.7);
+      box-shadow:
+        0 8px 28px rgba(124,58,237,.4),
+        inset 0 1px 0 rgba(255,255,255,.18);
+      transform: translateY(-3px) scale(1.03);
+    }
+    .card:not(.flipped):not(.matched):hover .card-back::before {
+      left: 120%;
+    }
+
+    /* ── Front face ── */
+    .card-front {
+      background: linear-gradient(145deg, #0d1520 0%, #131f35 100%);
+      border: 1px solid var(--border-2);
+      box-shadow: var(--shadow-sm);
+      transform: rotateY(180deg);
+    }
+
+    /* ── Matched state ── */
+    .card.matched .card-inner { animation: matchPop .45s var(--ease-spring) forwards; }
+    .card.matched .card-front {
+      background: linear-gradient(145deg, #052e1a 0%, #0a3d25 100%);
+      border-color: var(--green);
+      box-shadow:
+        0 0 0 2px var(--green-dim),
+        0 0 24px rgba(16,185,129,.35),
+        var(--shadow-sm);
+    }
+    @keyframes matchPop {
+      0%   { transform: rotateY(180deg) scale(1); }
+      35%  { transform: rotateY(180deg) scale(1.14); }
+      65%  { transform: rotateY(180deg) scale(.96); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+
+    /* ── Wrong-match shake ── */
+    @keyframes shake {
+      0%,100% { transform: rotateY(180deg) translateX(0); }
+      20%      { transform: rotateY(180deg) translateX(-7px); }
+      40%      { transform: rotateY(180deg) translateX(7px); }
+      65%      { transform: rotateY(180deg) translateX(-4px); }
+      85%      { transform: rotateY(180deg) translateX(4px); }
+    }
+    .card.wrong .card-front {
+      border-color: var(--red) !important;
+      box-shadow: 0 0 0 2px var(--red-dim), 0 0 16px rgba(239,68,68,.3) !important;
+    }
+    .card.wrong .card-inner { animation: shake .42s ease; }
+
+    /* ═══════════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════════ */
+    .btn {
+      margin-top: 20px;
+      padding: 12px 32px;
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .3px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--violet) 0%, var(--indigo) 50%, var(--violet-2) 100%);
+      background-size: 200% 100%;
+      color: #fff;
+      box-shadow:
+        0 4px 20px rgba(124,58,237,.45),
+        inset 0 1px 0 rgba(255,255,255,.18);
+      transition: box-shadow .2s, transform .15s, background-position .3s;
+    }
+    .btn:hover {
+      background-position: 100% 0;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(124,58,237,.6), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .btn:active { transform: translateY(0) scale(.97); }
+
+    /* ═══════════════════════════════════════════
+       OVERLAY  (victory + timeout)
+    ═══════════════════════════════════════════ */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5,8,18,.82);
+      backdrop-filter: blur(14px) saturate(1.5);
+      -webkit-backdrop-filter: blur(14px) saturate(1.5);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s var(--ease-out);
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+
+    .victory-box {
+      background:
+        linear-gradient(145deg, rgba(15,21,40,.97) 0%, rgba(11,15,30,.97) 100%);
+      border: 1px solid var(--border-2);
+      border-radius: var(--radius-xl);
+      padding: 44px 52px;
+      text-align: center;
+      box-shadow:
+        var(--shadow-xl),
+        0 0 0 1px rgba(255,255,255,.04),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      max-width: min(480px, 92vw);
+      animation: popIn .4s var(--ease-spring) both;
+    }
+    @keyframes popIn {
+      from { transform: scale(.75) translateY(16px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);      opacity: 1; }
+    }
+
+    .victory-emoji {
+      font-size: 3.6rem;
+      margin-bottom: 14px;
+      display: block;
+      animation: emojiPop .5s var(--ease-spring) both .1s;
+    }
+    @keyframes emojiPop {
+      from { transform: scale(0) rotate(-20deg); }
+      to   { transform: scale(1) rotate(0); }
+    }
+
+    .victory-title {
+      font-size: 2.1rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(100deg, var(--pink), var(--violet), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .victory-title.timeout {
+      background: linear-gradient(100deg, var(--red), var(--orange));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .victory-stats {
+      font-size: 1rem;
+      line-height: 1.9;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+    .victory-stats strong { color: var(--cyan); font-weight: 700; }
+
+    /* ═══════════════════════════════════════════
+       CONFETTI CANVAS
+    ═══════════════════════════════════════════ */
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+
+    /* ═══════════════════════════════════════════
+       FLOATING ACTION BUTTONS (mute)
+    ═══════════════════════════════════════════ */
+    #muteBtn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border-2);
+      background: rgba(15,21,40,.7);
+      backdrop-filter: blur(12px);
+      color: var(--text-1);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s, transform .15s, box-shadow .2s;
+      z-index: 200;
+      box-shadow: var(--shadow-sm);
+    }
+    #muteBtn:hover {
+      background: rgba(124,58,237,.3);
+      border-color: rgba(124,58,237,.5);
+      transform: scale(1.08);
+      box-shadow: 0 0 16px rgba(124,58,237,.35);
+    }
+    #muteBtn.muted { opacity: .45; }
+
+    /* ═══════════════════════════════════════════
+       START SCREEN
+    ═══════════════════════════════════════════ */
+    #startScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-1);
+      padding: 24px;
+      transition: opacity .55s var(--ease-out), transform .55s var(--ease-out);
+      overflow-y: auto;
+    }
+    /* Match body mesh on the start screen too */
+    #startScreen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(124,58,237,.2) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 90%,  rgba(56,189,248,.14) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 50% 50%,  rgba(79,70,229,.1)  0%, transparent 65%);
+      pointer-events: none;
+    }
+    #startScreen.hide {
+      opacity: 0;
+      transform: scale(1.05) translateY(-8px);
+      pointer-events: none;
+    }
+
+    .start-box {
+      position: relative;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* Preview row of floating emoji cards */
+    .float-cards {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .float-card {
+      width: 54px;
+      height: 54px;
+      border-radius: 13px;
+      background:
+        linear-gradient(145deg, rgba(124,58,237,.35) 0%, rgba(79,70,229,.25) 50%, rgba(56,189,248,.2) 100%);
+      border: 1px solid rgba(124,58,237,.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: var(--shadow-md);
+      animation: cardFloat 3.2s var(--ease-out) infinite alternate;
+    }
+    .float-card:nth-child(1) { animation-delay: 0s; }
+    .float-card:nth-child(2) { animation-delay: .45s; }
+    .float-card:nth-child(3) { animation-delay: .9s; }
+    .float-card:nth-child(4) { animation-delay: 1.35s; }
+    .float-card:nth-child(5) { animation-delay: 1.8s; }
+    @keyframes cardFloat {
+      from { transform: translateY(0);    box-shadow: var(--shadow-md); }
+      to   { transform: translateY(-12px); box-shadow: 0 18px 40px rgba(124,58,237,.45); }
+    }
+
+    /* Heading */
+    .start-title {
+      font-size: clamp(2.6rem, 8vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 8px;
+      background: linear-gradient(105deg, var(--pink) 0%, var(--violet) 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 24px rgba(124,58,237,.3));
+    }
+    .start-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 32px;
+    }
+
+    /* How-to-play card */
+    .how-to-play {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px 26px;
+      margin-bottom: 24px;
+      text-align: left;
+      box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .how-to-play h2 {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cyan);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .steps { display: flex; flex-direction: column; gap: 13px; }
+    .step  { display: flex; align-items: flex-start; gap: 13px; }
+
+    .step-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: var(--cyan-dim);
+      border: 1px solid rgba(56,189,248,.2);
+    }
+    .step-text {
+      padding-top: 7px;
+      font-size: .9rem;
+      font-weight: 400;
+      color: var(--text-2);
+      line-height: 1.45;
+    }
+    .step-text strong { color: var(--text-1); font-weight: 600; }
+
+    /* Difficulty selector on start screen */
+    .start-diff-label {
+      font-size: .68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .start-diff-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 26px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 5px;
+    }
+
+    /* Start CTA */
+    #startBtn {
+      padding: 15px 52px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: .2px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--violet) 0%, var(--indigo) 50%, var(--violet-2) 100%);
+      background-size: 200% 100%;
+      color: #fff;
+      box-shadow:
+        0 6px 28px rgba(124,58,237,.55),
+        inset 0 1px 0 rgba(255,255,255,.2);
+      transition: box-shadow .2s, transform .15s, background-position .3s;
+      margin-top: 0;
+    }
+    #startBtn:hover {
+      background-position: 100% 0;
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(124,58,237,.65), inset 0 1px 0 rgba(255,255,255,.25);
+    }
+    #startBtn:active { transform: translateY(0) scale(.97); }
+
+    .start-tip {
+      margin-top: 14px;
+      font-size: .76rem;
+      font-weight: 500;
+      color: var(--text-3);
+      letter-spacing: .2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       START SCREEN
+  ══════════════════════════════════════════ -->
+  <div id="startScreen" role="dialog" aria-modal="true" aria-label="Memory Match start screen">
+    <div class="start-box">
+
+      <!-- Animated floating cards -->
+      <div class="float-cards" aria-hidden="true">
+        <div class="float-card">🦊</div>
+        <div class="float-card">🐸</div>
+        <div class="float-card">❓</div>
+        <div class="float-card">🐙</div>
+        <div class="float-card">🦋</div>
+      </div>
+
+      <div class="start-title">Memory Match</div>
+      <div class="start-subtitle">Can you find all the pairs?</div>
+
+      <!-- How to play -->
+      <div class="how-to-play">
+        <h2>How to Play</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-icon">👆</div>
+            <div class="step-text"><strong>Click any card</strong> to flip it over and reveal the emoji hidden underneath.</div>
+          </div>
+          <div class="step">
+            <div class="step-icon">🔍</div>
+            <div class="step-text"><strong>Flip a second card.</strong> If the two emojis match, they stay face up!</div>
+          </div>
+          <div class="step">
+            <div class="step-icon">🔄</div>
+            <div class="step-text">If they <strong>don't match</strong>, both cards flip back — remember where they were.</div>
+          </div>
+          <div class="step">
+            <div class="step-icon">🏆</div>
+            <div class="step-text"><strong>Match all 8 pairs</strong> in as few moves as possible to claim the best score!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Difficulty selector (mirrors the in-game one) -->
+      <div class="start-diff-label">Choose your difficulty</div>
+      <div class="start-diff-row" role="group" aria-label="Difficulty">
+        <button class="diff-btn active-easy" data-diff="easy"   aria-pressed="true">😊 Easy</button>
+        <button class="diff-btn"             data-diff="medium" aria-pressed="false">😤 Medium</button>
+        <button class="diff-btn"             data-diff="hard"   aria-pressed="false">💀 Hard</button>
+      </div>
+
+      <button id="startBtn">🎮 Start Game</button>
+      <div class="start-tip">🔊 Sound on for the full experience</div>
+
+    </div>
+  </div><!-- /#startScreen -->
+
+  <h1>Memory Match 🃏</h1>
+
+  <!-- Difficulty picker -->
+  <div class="difficulty-bar" role="group" aria-label="Difficulty">
+    <button class="diff-btn active-easy" data-diff="easy"   aria-pressed="true">😊 Easy</button>
+    <button class="diff-btn"             data-diff="medium" aria-pressed="false">😤 Medium</button>
+    <button class="diff-btn"             data-diff="hard"   aria-pressed="false">💀 Hard</button>
+  </div>
+
+  <!-- Hard-mode countdown badge -->
+  <span id="diffBadge">⏳ 90 s countdown</span>
+
+  <!-- Stats bar -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Moves</span>
+      <span class="stat-value" id="moves">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Pairs</span>
+      <span class="stat-value" id="pairs">0 / 8</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label" id="timerLabel">Time</span>
+      <span class="stat-value" id="timer">0:00</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat best">
+      <span class="stat-label">🏆 Best</span>
+      <span class="stat-value" id="bestMoves">—</span>
+    </div>
+    <div class="stat best">
+      <span class="stat-label">Best Time</span>
+      <span class="stat-value" id="bestTime">—</span>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <button class="btn" id="restartBtn">🔄 New Game</button>
+
+  <!-- Victory / timeout overlay -->
+  <div class="overlay" id="overlay">
+    <div class="victory-box">
+      <span class="victory-emoji" id="victoryEmoji">🎉</span>
+      <div class="victory-title" id="victoryTitle">You Won!</div>
+      <div class="victory-stats" id="victoryStats"></div>
+      <button class="btn" id="playAgainBtn">🎮 Play Again</button>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+  <button id="muteBtn" title="Toggle sound">🔊</button>
+
+  <script>
+    /* ══════════════════════════════════════════
+       WEB AUDIO ENGINE  (no external files)
+    ══════════════════════════════════════════ */
+    let audioCtx   = null;
+    let masterGain = null;
+    let muted      = false;
+
+    function getCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function getMaster() {
+      const c = getCtx();
+      if (!masterGain) {
+        masterGain = c.createGain();
+        masterGain.gain.value = muted ? 0 : 0.55;
+        masterGain.connect(c.destination);
+      }
+      return masterGain;
+    }
+    function osc(type, freq, start, dur, gainVal, dest) {
+      const c = getCtx(), g = c.createGain();
+      g.gain.setValueAtTime(gainVal, start);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      g.connect(dest);
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, start);
+      o.connect(g); o.start(start); o.stop(start + dur + 0.01);
+    }
+    function oscRamp(type, f0, f1, start, dur, gainVal, dest) {
+      const c = getCtx(), g = c.createGain();
+      g.gain.setValueAtTime(gainVal, start);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      g.connect(dest);
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f0, start);
+      o.frequency.exponentialRampToValueAtTime(f1, start + dur);
+      o.connect(g); o.start(start); o.stop(start + dur + 0.01);
+    }
+
+    function sfxFlip() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      const buf = c.createBuffer(1, c.sampleRate * 0.06, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource(); src.buffer = buf;
+      const bpf = c.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 1800; bpf.Q.value = 1.2;
+      const g = c.createGain(); g.gain.setValueAtTime(0.18, now); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+      src.connect(bpf); bpf.connect(g); g.connect(m); src.start(now);
+    }
+    function sfxNoMatch() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      oscRamp('sine',   340, 160, now,        0.28, 0.35, m);
+      oscRamp('square', 170,  80, now + 0.05, 0.22, 0.12, m);
+    }
+    function sfxMatch() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      osc('sine',      880, now,        0.22, 0.30, m);
+      osc('sine',     1046, now + 0.10, 0.22, 0.25, m);
+      osc('triangle', 2093, now + 0.08, 0.18, 0.12, m);
+    }
+    function sfxLastPair() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      [523, 659, 784, 1047].forEach((f, i) => {
+        osc('sine',    f,     now + i * 0.09, 0.28, 0.35, m);
+        osc('triangle', f*2, now + i * 0.09, 0.20, 0.10, m);
+      });
+    }
+    function sfxVictory() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      [261, 329, 392, 523, 659].forEach((f, i) => {
+        osc('sine',     f, now + i * 0.07, 0.5 - i * 0.04, 0.28, m);
+        osc('triangle', f, now + i * 0.07, 0.5 - i * 0.04, 0.10, m);
+      });
+      [261, 329, 392, 523, 659].forEach(f => osc('sine', f, now + 0.45, 0.7, 0.22, m));
+      [1046, 1318, 1568].forEach((f, i) => osc('sine', f, now + 0.48 + i * 0.06, 0.3, 0.10, m));
+      oscRamp('sine', 120, 60, now, 0.3, 0.45, m);
+    }
+    function sfxTimeout() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      oscRamp('sawtooth', 320, 80, now,        0.35, 0.30, m);
+      oscRamp('square',   200, 60, now + 0.12, 0.30, 0.18, m);
+      osc('sine', 100, now + 0.28, 0.3, 0.22, m);
+    }
+    function sfxNewGame() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      oscRamp('sawtooth', 80, 320, now,        0.15, 0.15, m);
+      oscRamp('sine',    220, 660, now + 0.04, 0.18, 0.20, m);
+      osc('sine', 880, now + 0.16, 0.12, 0.15, m);
+    }
+    function sfxNewRecord() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      [1318, 1568, 1760, 2093, 2637].forEach((f, i) => {
+        osc('sine',     f,   now + i * 0.07, 0.22, 0.20, m);
+        osc('triangle', f*2, now + i * 0.07, 0.15, 0.08, m);
+      });
+      osc('sine', 3136, now + 0.38, 0.25, 0.12, m);
+    }
+    function sfxDiffSelect(pitch) {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      osc('sine', pitch,        now,       0.12, 0.20, m);
+      osc('sine', pitch * 1.25, now + 0.07, 0.10, 0.15, m);
+    }
+    function sfxCountdownTick() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      osc('square', 880, now, 0.06, 0.12, m);
+    }
+    function sfxStart() {
+      if (muted) return;
+      const c = getCtx(), now = c.currentTime, m = getMaster();
+      // Bright upward arp — signals game beginning
+      [523, 659, 784, 1047, 1318].forEach((f, i) => {
+        osc('sine',     f,   now + i * 0.06, 0.18, 0.28, m);
+        osc('triangle', f,   now + i * 0.06, 0.12, 0.08, m);
+      });
+      oscRamp('sine', 200, 600, now, 0.25, 0.12, m);
+    }
+
+    /* Mute toggle */
+    const muteBtn = document.getElementById('muteBtn');
+    muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.classList.toggle('muted', muted);
+      if (masterGain) masterGain.gain.value = muted ? 0 : 0.55;
+    });
+
+    /* ══════════════════════════════════════════
+       DIFFICULTY CONFIG
+    ══════════════════════════════════════════ */
+    const DIFFICULTIES = {
+      easy:   { label: 'Easy',   flipDur: 0.45, flipBackMs: 1400, countdown: null,  perfectMoves: 16, greatMoves: 22 },
+      medium: { label: 'Medium', flipDur: 0.30, flipBackMs: 800,  countdown: null,  perfectMoves: 14, greatMoves: 20 },
+      hard:   { label: 'Hard',   flipDur: 0.18, flipBackMs: 450,  countdown: 90,    perfectMoves: 12, greatMoves: 18 },
+    };
+
+    let currentDiff = 'easy';
+
+    /* ══════════════════════════════════════════
+       GAME STATE
+    ══════════════════════════════════════════ */
+    const EMOJIS = ['🦊','🐸','🦁','🐙','🦋','🐳','🌸','🎸'];
+    let deck        = [];
+    let flipped     = [];
+    let matched     = 0;
+    let moves       = 0;
+    let locked      = false;
+    let timerInterval = null;
+    let seconds     = 0;
+    let gameStarted = false;
+    let gameOver    = false;  // true once won or timed-out
+
+    /* ══════════════════════════════════════════
+       DOM REFS
+    ══════════════════════════════════════════ */
+    const grid           = document.getElementById('grid');
+    const movesEl        = document.getElementById('moves');
+    const pairsEl        = document.getElementById('pairs');
+    const timerEl        = document.getElementById('timer');
+    const timerLabel     = document.getElementById('timerLabel');
+    const overlay        = document.getElementById('overlay');
+    const victoryEmoji   = document.getElementById('victoryEmoji');
+    const victoryTitle   = document.getElementById('victoryTitle');
+    const victoryStats   = document.getElementById('victoryStats');
+    const restartBtn     = document.getElementById('restartBtn');
+    const playAgainBtn   = document.getElementById('playAgainBtn');
+    const confettiCanvas = document.getElementById('confetti');
+    const bestMovesEl    = document.getElementById('bestMoves');
+    const bestTimeEl     = document.getElementById('bestTime');
+    const diffBadge      = document.getElementById('diffBadge');
+    const startScreen    = document.getElementById('startScreen');
+    const startBtn       = document.getElementById('startBtn');
+    // Covers buttons in BOTH the start screen and the in-game bar
+    const diffBtns       = document.querySelectorAll('.diff-btn');
+
+    /* ══════════════════════════════════════════
+       HIGH SCORE  (per-difficulty localStorage)
+    ══════════════════════════════════════════ */
+    function lsKey(diff) { return `memoryMatch_best_${diff}`; }
+
+    function loadBest(diff) {
+      try { const r = localStorage.getItem(lsKey(diff)); return r ? JSON.parse(r) : null; }
+      catch { return null; }
+    }
+    function saveBest(diff, score) {
+      try { localStorage.setItem(lsKey(diff), JSON.stringify(score)); } catch {}
+    }
+    function isBetter(candidate, current) {
+      if (!current) return true;
+      if (candidate.moves < current.moves) return true;
+      if (candidate.moves === current.moves && candidate.seconds < current.seconds) return true;
+      return false;
+    }
+    function fmtTime(secs) {
+      return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    }
+    function renderBest() {
+      const best = loadBest(currentDiff);
+      if (best) {
+        bestMovesEl.textContent = best.moves;
+        bestTimeEl.textContent  = fmtTime(best.seconds);
+      } else {
+        bestMovesEl.textContent = '—';
+        bestTimeEl.textContent  = '—';
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       DIFFICULTY PICKER
+    ══════════════════════════════════════════ */
+    const DIFF_PITCHES = { easy: 523, medium: 659, hard: 784 };
+
+    diffBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.diff;
+        if (d === currentDiff) return;
+        currentDiff = d;
+        updateDiffUI();
+        sfxDiffSelect(DIFF_PITCHES[d]);
+        // Only rebuild the board if the game is already running (start screen not visible)
+        if (startScreen.classList.contains('hide')) {
+          sfxNewGame();
+          buildBoard();
+        }
+      });
+    });
+
+    function updateDiffUI() {
+      const cfg = DIFFICULTIES[currentDiff];
+
+      /* Sync ALL diff buttons (start screen + in-game bar) */
+      diffBtns.forEach(b => {
+        b.classList.remove('active-easy', 'active-medium', 'active-hard');
+        b.setAttribute('aria-pressed', 'false');
+        if (b.dataset.diff === currentDiff) {
+          b.classList.add(`active-${currentDiff}`);
+          b.setAttribute('aria-pressed', 'true');
+        }
+      });
+
+      /* Hard badge */
+      diffBadge.classList.toggle('hard', currentDiff === 'hard');
+
+      /* Timer label */
+      timerLabel.textContent = cfg.countdown ? 'Time Left' : 'Time';
+
+      /* Flip speed via CSS custom property on :root */
+      document.documentElement.style.setProperty('--flip-dur', `${cfg.flipDur}s`);
+
+      /* Refresh best for the chosen difficulty */
+      renderBest();
+    }
+
+    /* ══════════════════════════════════════════
+       TIMER  (counts up normally; counts down on Hard)
+    ══════════════════════════════════════════ */
+    function startTimer() {
+      if (timerInterval) return;
+      const cfg = DIFFICULTIES[currentDiff];
+
+      timerInterval = setInterval(() => {
+        if (gameOver) { stopTimer(); return; }
+
+        if (cfg.countdown) {
+          // Hard: count down
+          seconds--;
+          const left = Math.max(0, seconds);
+          timerEl.textContent = fmtTime(left);
+          // Warn when ≤ 10 s
+          timerEl.classList.toggle('countdown-warn', left <= 10);
+          if (left <= 10 && left > 0) sfxCountdownTick();
+          if (left === 0) handleTimeout();
+        } else {
+          seconds++;
+          timerEl.textContent = fmtTime(seconds);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      timerEl.classList.remove('countdown-warn');
+      const cfg = DIFFICULTIES[currentDiff];
+      seconds = cfg.countdown ? cfg.countdown : 0;
+      timerEl.textContent = cfg.countdown ? fmtTime(cfg.countdown) : '0:00';
+    }
+
+    /* ══════════════════════════════════════════
+       BUILD BOARD
+    ══════════════════════════════════════════ */
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function buildBoard() {
+      deck        = shuffle([...EMOJIS, ...EMOJIS]);
+      flipped     = [];
+      matched     = 0;
+      moves       = 0;
+      locked      = false;
+      gameStarted = false;
+      gameOver    = false;
+      movesEl.textContent = '0';
+      pairsEl.textContent = '0 / 8';
+      grid.innerHTML = '';
+      resetTimer();
+      updateDiffUI();
+
+      deck.forEach((emoji, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.index = i;
+        card.dataset.emoji = emoji;
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-back"></div>
+            <div class="card-face card-front">${emoji}</div>
+          </div>`;
+        card.addEventListener('click', onCardClick);
+        grid.appendChild(card);
+      });
+    }
+
+    /* ══════════════════════════════════════════
+       CARD CLICK
+    ══════════════════════════════════════════ */
+    function onCardClick(e) {
+      const card = e.currentTarget;
+      if (locked || gameOver) return;
+      if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      if (!gameStarted) {
+        gameStarted = true;
+        startTimer();
+      }
+
+      sfxFlip();
+      card.classList.add('flipped');
+      flipped.push(card);
+
+      if (flipped.length === 2) {
+        moves++;
+        movesEl.textContent = moves;
+        checkMatch();
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       MATCH LOGIC
+    ══════════════════════════════════════════ */
+    function checkMatch() {
+      const [a, b] = flipped;
+      const isMatch = a.dataset.emoji === b.dataset.emoji;
+      const cfg = DIFFICULTIES[currentDiff];
+
+      locked = true;
+
+      if (isMatch) {
+        a.classList.add('matched');
+        b.classList.add('matched');
+        a.removeEventListener('click', onCardClick);
+        b.removeEventListener('click', onCardClick);
+        matched++;
+        pairsEl.textContent = `${matched} / 8`;
+        flipped = [];
+        locked  = false;
+
+        if (matched === 8) {
+          sfxLastPair();
+          setTimeout(handleVictory, 320);
+        } else {
+          sfxMatch();
+        }
+      } else {
+        sfxNoMatch();
+        a.classList.add('wrong');
+        b.classList.add('wrong');
+        setTimeout(() => {
+          a.classList.remove('flipped', 'wrong');
+          b.classList.remove('flipped', 'wrong');
+          flipped = [];
+          locked  = false;
+        }, cfg.flipBackMs);
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       VICTORY
+    ══════════════════════════════════════════ */
+    function handleVictory() {
+      gameOver = true;
+      stopTimer();
+
+      const cfg = DIFFICULTIES[currentDiff];
+      // For Hard, elapsed = countdown start − remaining; for others, seconds = elapsed
+      const elapsed  = cfg.countdown ? cfg.countdown - seconds : seconds;
+      const candidate = { moves, seconds: elapsed };
+      const best      = loadBest(currentDiff);
+      const isNewBest = isBetter(candidate, best);
+
+      if (isNewBest) { saveBest(currentDiff, candidate); renderBest(); }
+
+      const rating = moves <= cfg.perfectMoves ? '⭐⭐⭐ Perfect!'
+                   : moves <= cfg.greatMoves   ? '⭐⭐ Great!'
+                   :                             '⭐ Good job!';
+
+      victoryEmoji.textContent = '🎉';
+      victoryTitle.textContent = 'You Won!';
+      victoryTitle.classList.remove('timeout');
+      victoryStats.innerHTML =
+        `Difficulty: <strong>${cfg.label}</strong><br>` +
+        `Completed in <strong>${fmtTime(elapsed)}</strong> with <strong>${moves} moves</strong><br>` +
+        rating +
+        (isNewBest ? '<br><span class="new-record">🏆 New Best Score!</span>' : '');
+
+      overlay.classList.add('show');
+      launchConfetti();
+      sfxVictory();
+      if (isNewBest) setTimeout(sfxNewRecord, 900);
+    }
+
+    /* ══════════════════════════════════════════
+       TIMEOUT  (Hard mode only)
+    ══════════════════════════════════════════ */
+    function handleTimeout() {
+      gameOver = true;
+      stopTimer();
+      locked = true;
+
+      victoryEmoji.textContent = '💀';
+      victoryTitle.textContent = 'Time\'s Up!';
+      victoryTitle.classList.add('timeout');
+      victoryStats.innerHTML =
+        `You found <strong>${matched} / 8</strong> pairs before time ran out.<br>` +
+        `Give Hard mode another shot! 💪`;
+
+      overlay.classList.add('show');
+      sfxTimeout();
+    }
+
+    /* ══════════════════════════════════════════
+       CONFETTI
+    ══════════════════════════════════════════ */
+    let confettiParticles = [];
+    let confettiRAF = null;
+    const ctx = confettiCanvas.getContext('2d');
+
+    function launchConfetti() {
+      confettiCanvas.width  = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+      confettiParticles = Array.from({ length: 160 }, () => ({
+        x: Math.random() * confettiCanvas.width,
+        y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+        w: Math.random() * 10 + 5, h: Math.random() * 5 + 3,
+        color: `hsl(${Math.random()*360},90%,60%)`,
+        vx: (Math.random() - .5) * 3, vy: Math.random() * 3 + 2,
+        angle: Math.random() * Math.PI * 2, spin: (Math.random() - .5) * .2,
+        opacity: 1,
+      }));
+      if (confettiRAF) cancelAnimationFrame(confettiRAF);
+      drawConfetti();
+    }
+    function drawConfetti() {
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      let alive = 0;
+      confettiParticles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.angle += p.spin;
+        if (p.y > confettiCanvas.height * .8) p.opacity -= .02;
+        if (p.opacity > 0) {
+          alive++;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore();
+        }
+      });
+      if (alive > 0) confettiRAF = requestAnimationFrame(drawConfetti);
+      else ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+    /* ══════════════════════════════════════════
+       EVENT LISTENERS
+    ══════════════════════════════════════════ */
+    function startNewGame() {
+      overlay.classList.remove('show');
+      sfxNewGame();
+      buildBoard();
+    }
+    restartBtn.addEventListener('click', startNewGame);
+    playAgainBtn.addEventListener('click', startNewGame);
+
+    /* Start screen */
+    startBtn.addEventListener('click', () => {
+      sfxStart();
+      startScreen.classList.add('hide');
+      // Remove from tab order after transition
+      startScreen.addEventListener('transitionend', () => {
+        startScreen.style.display = 'none';
+      }, { once: true });
+    });
+
+    window.addEventListener('resize', () => {
+      confettiCanvas.width  = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    });
+
+    /* ══════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════ */
+    renderBest();
+    buildBoard(); // board is built silently behind the start screen
+  </script>
+</body>
+</html>
