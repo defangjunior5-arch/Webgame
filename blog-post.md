@@ -12,9 +12,9 @@
 
 ## From Zero to a Working Game in One Session
 
-A few weeks before **AWS Student Community Day Buea**, our group ran a series of preparation sessions to get students comfortable with modern developer tools. Pre-Session 4 was all about **Kiro IDE** — an AI-powered development environment built on VS Code where an AI agent writes, edits, and reasons about code right alongside you.
+A few weeks before **AWS Student Community Day Buea**, our group ran a series of preparation sessions to get students comfortable with modern developer tools. Pre-Session 4 was all about **Kiro IDE** an AI-powered development environment built on VS Code where an AI agent writes, edits, and reasons about code right alongside you.
 
-The challenge for the session was simple: *start from nothing and build something real*. No starter templates, no copying from tutorials, no prior game-dev experience required. I decided to build a **Memory Match card game** — a classic flip-the-cards puzzle that I thought would be achievable in a session but still interesting enough to show off.
+The challenge for the session was simple: *start from nothing and build something real*. No starter templates, no copying from tutorials, no prior game-dev experience required. I decided to build a **Memory Match card game** a classic flip-the-cards puzzle that I thought would be achievable in a session but still interesting enough to show off.
 
 What actually happened exceeded my expectations by a significant margin.
 
@@ -25,18 +25,18 @@ What actually happened exceeded my expectations by a significant margin.
 ![The completed Memory Match game running live in the browser](screenshot-game.png)
 *Screenshot 1: Memory Match live at defangjunior5-arch.github.io/Webgame/memory-match.html*
 
-The finished game is a **4×4 grid of 16 face-down cards**, each hiding one of eight emoji characters — a fox, a frog, a lion, an octopus, a butterfly, a whale, a cherry blossom, and a guitar. You flip two cards per turn; if they match, they stay open with a green glow. If they don't, they flip back and you have to remember where each one was.
+The finished game is a **4×4 grid of 16 face-down cards**, each hiding one of eight emoji characters a fox, a frog, a lion, an octopus, a butterfly, a whale, a cherry blossom, and a guitar. You flip two cards per turn; if they match, they stay open with a green glow. If they don't, they flip back and you have to remember where each one was.
 
 But the game grew well beyond the basic idea. By the end of the session it had:
 
-- **Three difficulty levels** — Easy, Medium, and Hard — each changing how fast cards flip and how long unmatched cards stay visible before flipping back. Hard mode adds a **90-second countdown** that turns red and ticks when you hit the last 10 seconds.
-- **A live stats panel** showing your move count, pairs found, and time elapsed — all inside a clean glass-effect bar.
+- **Three difficulty levels**  Easy, Medium, and Hard  each changing how fast cards flip and how long unmatched cards stay visible before flipping back. Hard mode adds a **90-second countdown** that turns red and ticks when you hit the last 10 seconds.
+- **A live stats panel** showing your move count, pairs found, and time elapsed  all inside a clean glass-effect bar.
 - **A persistent high-score system** that saves your best result per difficulty level in the browser so it survives page reloads.
-- **Ten synthesised sound effects** — card flip, match, no-match, last pair, victory fanfare, countdown tick, timeout, new record, and more — all generated live using the Web Audio API with zero audio files to download.
+- **Ten synthesised sound effects** card flip, match, no-match, last pair, victory fanfare, countdown tick, timeout, new record, and more all generated live using the Web Audio API with zero audio files to download.
 - **A polished start screen** with animated floating preview cards and a step-by-step how-to-play guide.
 - **Canvas confetti** that fires on a win.
 
-The entire game is a **single HTML file** — 1,366 lines — with no frameworks, no build tools, and no server required.
+The entire game is a **single HTML file** 1,366 lines with no frameworks, no build tools, and no server required.
 
 ---
 
@@ -66,7 +66,7 @@ That single sentence produced a complete working game. Cards flipped in 3D, matc
 
 > *"Improve the visual design with a modern color scheme, smooth animations, better fonts, and subtle shadows. Give it a professional polished look."*
 
-Each prompt targeted exactly one thing. Kiro read the existing code before every edit and never touched what it didn't need to. When I asked for sounds, the card logic stayed untouched. When I asked for a visual redesign, the JavaScript was left entirely alone. That discipline made iteration feel safe — I could always test, see what changed, and move forward confidently.
+Each prompt targeted exactly one thing. Kiro read the existing code before every edit and never touched what it didn't need to. When I asked for sounds, the card logic stayed untouched. When I asked for a visual redesign, the JavaScript was left entirely alone. That discipline made iteration feel safe  I could always test, see what changed, and move forward confidently.
 
 What I noticed is that Kiro also explained its decisions. When it rewrote the CSS, it told me it was switching to Inter font, building a CSS custom-property design system, adding an animated mesh gradient, and using glass-morphism on the cards. Reading those explanations taught me things I would not have learned from just running code.
 
